@@ -3,6 +3,7 @@
 package libcontainer
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,6 +44,21 @@ func destroy(c *linuxContainer) error {
 			logrus.Warn(err)
 		}
 	}
+	// Collect stats just before destroying the cgroup
+	if beforeKillStats, err := c.Stats(); err != nil {
+		c.statsOnExit = Stats{}
+		logrus.Warn(err)
+	} else {
+		c.statsOnExit = *beforeKillStats
+		if logrus.GetLevel() == logrus.DebugLevel {
+			asJSON, marshalErr := json.MarshalIndent(c.statsOnExit, "", "  ")
+			if marshalErr != nil {
+				asJSON = []byte("none")
+			}
+			logrus.Debugf("Recording stats before cgroup destruction: %s", asJSON)
+		}
+	}
+
 	err := c.cgroupManager.Destroy()
 	if rerr := os.RemoveAll(c.root); err == nil {
 		err = rerr

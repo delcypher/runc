@@ -43,6 +43,7 @@ type linuxContainer struct {
 	criuVersion          int
 	state                containerState
 	created              time.Time
+	statsOnExit          Stats
 }
 
 // State represents a running container's state
